@@ -52,8 +52,8 @@ function App() {
     }
   }
 
-  // Ensure at least 3 results (show fallback message if not)
-  const displayResults = results.length >= 3 ? results.slice(0, 5) : []
+  // Ensure at least 6 results (show fallback message if not)
+  const displayResults = results.length >= 6 ? results.slice(0, 6) : []
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
