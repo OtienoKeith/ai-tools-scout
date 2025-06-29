@@ -31,11 +31,11 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        query: `${query} AI tools software applications`,
-        search_depth: "basic",
-        include_answer: false,
-        include_raw_content: false,
-        max_results: 10
+        query: `List 3 actual AI tools for ${query}. For each, give: - Name - Short description (1–2 lines) - Pricing - Link to the tool (not to blogs or articles) Return in plain format, no blog links, no summaries.`,
+        search_depth: "advanced", // Using advanced for better answer synthesis
+        include_answer: true,
+        include_raw_content: false, // Keep false if only answer is needed
+        max_results: 3 // Requesting 3 tools
       })
     });
 
@@ -43,35 +43,77 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       throw new Error(`Tavily API error: ${response.status}`);
     }
 
-    const data: TavilyResponse = await response.json();
+    const data = await response.json();
     
-    // Extract and format tools from search results
     const tools: TavilyTool[] = [];
-    
-    for (const result of data.results.slice(0, 3)) {
-      // Extract tool information from the search result
-      const toolName = result.title.split(' - ')[0] || result.title.split(' | ')[0] || result.title;
-      const description = result.content.substring(0, 200) + "...";
-      
-      // Try to determine pricing from content
-      let pricing = "Unknown";
-      const content = result.content.toLowerCase();
-      if (content.includes("free") || content.includes("freemium")) {
-        pricing = "Freemium";
-      } else if (content.includes("paid") || content.includes("subscription")) {
-        pricing = "Paid";
-      }
+    const blogLikeKeywords = /\b(blog|article|top|best|guide|review|vs|alternatives|\d+\s+(tools|ways|apps))\b/i;
+    const urlKeywordsToAvoid = /\/(blog|article|news)\b|medium\.com|wordpress\.com|blogspot\.com/i;
+    const generateId = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9);
 
-      tools.push({
-        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9),
-        name: toolName,
-        description,
-        pricing,
-        url: result.url
-      });
+    if (data.answer) {
+      const lines = data.answer.split('\n');
+      for (const line of lines) {
+        if (blogLikeKeywords.test(line) || urlKeywordsToAvoid.test(line)) {
+          continue;
+        }
+        const toolRegex = /-\s*(.+?):\s*(.+?)\s*-\s*Pricing:\s*(.+?)\s*-\s*Link:\s*(https?:\/\/[^\s]+)/i;
+        const match = line.match(toolRegex);
+
+        if (match && match[1] && match[2] && match[3] && match[4]) {
+          const name = match[1].trim();
+          const description = match[2].trim();
+          const pricing = match[3].trim();
+          const url = match[4].trim();
+
+          if (!blogLikeKeywords.test(name) && !urlKeywordsToAvoid.test(url)) {
+            tools.push({ id: generateId(), name, description, pricing, url });
+          }
+        } else {
+          const simpleToolRegex = /^\s*-\s*([^:(]+?)\s*(?:\(([^)]+)\))?\s*-\s*(https?:\/\/[^\s]+)/i;
+          const simpleMatch = line.match(simpleToolRegex);
+          if (simpleMatch && simpleMatch[1] && simpleMatch[3]) {
+            const name = simpleMatch[1].trim();
+            const pricing = simpleMatch[2]?.trim() || "Unknown";
+            const url = simpleMatch[3].trim();
+            if (!blogLikeKeywords.test(name) && !urlKeywordsToAvoid.test(url)) {
+               tools.push({ id: generateId(), name, description: "N/A", pricing, url });
+            }
+          }
+        }
+      }
     }
 
-    return tools;
+    if (tools.length < 3 && data.results) {
+      for (const result of data.results) {
+        if (tools.length >= 3) break;
+
+        const title = result.title || "";
+        const url = result.url || "";
+        const contentSnippet = result.content || "";
+
+        if (blogLikeKeywords.test(title) || urlKeywordsToAvoid.test(url) || blogLikeKeywords.test(contentSnippet.substring(0,100))) {
+          continue;
+        }
+        if (url.includes("example.com")) continue;
+
+        const toolName = title.split(' - ')[0]?.split(' | ')[0]?.trim() || title.trim();
+        let pricing = "Unknown";
+        const lowerContent = contentSnippet.toLowerCase();
+        if (lowerContent.includes("free") || lowerContent.includes("freemium")) pricing = "Freemium";
+        else if (lowerContent.includes("paid") || lowerContent.includes("subscription") || lowerContent.includes("$")) pricing = "Paid";
+
+        if (!tools.some(t => t.url === url)) {
+          tools.push({
+            id: generateId(),
+            name: toolName,
+            description: contentSnippet.substring(0, 150) + "...",
+            pricing,
+            url
+          });
+        }
+      }
+    }
+    return tools.slice(0, 3); // Ensure we only return max 3
   } catch (error) {
     console.error("Tavily API error:", error);
     // Fallback to mock data on error
