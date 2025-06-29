@@ -1,25 +1,18 @@
 import type { TavilyTool } from "../types";
 
-// Domains that often contain blogs, news, or lists, not direct product pages
 const disallowedDomains = [
   "medium.com", "wordpress.com", "blogspot.com", "news.ycombinator.com",
   "producthunt.com", "reddit.com", "quora.com", "youtube.com"
 ];
 
-// Helper to detect if a URL looks like a blog, article, news, review, or list
 const urlLooksLikeBlogOrList = (url: string) =>
-  /\/(blog|article|news|reviews?|posts?|lists?|guide|explained)\/|(\d{2,})|top-\d/i.test(url);
+  /\/(blog|article|news|review|post|list|guide|explained)\b/i.test(url);
 
-// Helper to determine if a URL is likely a tool homepage
 const isLikelyToolHomepage = (url: string) => {
   try {
     const u = new URL(url);
-    // Only allow URLs at domain root or one level deep (site.com or site.com/tool)
-    const pathParts = u.pathname.split('/').filter(Boolean);
-    if (pathParts.length > 1) return false;
-    // Exclude known blog/news domains
+    // Only block if clearly a blog/article or known list domain
     if (disallowedDomains.some(domain => u.hostname.includes(domain))) return false;
-    // Exclude URLs that look like blog/list
     if (urlLooksLikeBlogOrList(url)) return false;
     return true;
   } catch {
@@ -27,7 +20,6 @@ const isLikelyToolHomepage = (url: string) => {
   }
 };
 
-// Fallback mock data for development or if API key is not set
 function getMockTools(query: string): TavilyTool[] {
   return [
     {
@@ -49,9 +41,7 @@ function getMockTools(query: string): TavilyTool[] {
 
 export async function searchAITools(query: string): Promise<TavilyTool[]> {
   const apiKey = import.meta.env.VITE_TAVILY_API_KEY;
-
   if (!apiKey) {
-    // Fallback to mock data for development
     console.warn("Tavily API key not found, using mock data");
     return getMockTools(query);
   }
@@ -64,11 +54,7 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        query: `List 3 actual, individual AI tools (not blogs, articles, reviews, or listicles) for ${query}. For each, provide:
-- Name
-- Short description (1–2 lines)
-- Pricing
-- Direct link to the tool's homepage (not to blogs, articles, or lists; only product homepages).`,
+        query: `List 3 actual AI tools (not blogs, articles, or lists) for ${query}. For each, give: Name, short description, pricing, and direct homepage link.`,
         search_depth: "advanced",
         include_answer: true,
         include_raw_content: false,
@@ -76,59 +62,23 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`Tavily API error: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Tavily API error: ${response.status}`);
 
     const data = await response.json();
-
-    const blogLikeKeywords = /\b(blog|article|top|best|guide|review|vs|alternatives|\d+\s+(tools|ways|apps))\b/i;
-    const urlKeywordsToAvoid = /\/(blog|article|news)\b|medium\.com|wordpress\.com|blogspot\.com/i;
+    const tools: TavilyTool[] = [];
     const generateId = () =>
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : Math.random().toString(36).substr(2, 9);
 
-    const tools: TavilyTool[] = [];
-
-    // (Optional) Try to parse answer text if it's structured
-    if (data.answer) {
-      const lines = data.answer.split('\n');
-      for (const line of lines) {
-        if (blogLikeKeywords.test(line) || urlKeywordsToAvoid.test(line)) {
-          continue;
-        }
-        // Example: ToolName - Description - Pricing - URL
-        const match = line.match(/^(.+?)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*(https?:\/\/\S+)/);
-        if (match && isLikelyToolHomepage(match[4])) {
-          tools.push({
-            id: generateId(),
-            name: match[1].trim(),
-            description: match[2].trim(),
-            pricing: match[3].trim(),
-            url: match[4].trim()
-          });
-        }
-      }
-    }
-
-    // Fallback: parse the raw results array
-    if (tools.length < 3 && data.results) {
+    if (data.results) {
       for (const result of data.results) {
         if (tools.length >= 3) break;
-
         const title = result.title || "";
         const url = result.url || "";
         const contentSnippet = result.content || "";
 
-        // Stricter filtering
-        if (
-          blogLikeKeywords.test(title) ||
-          urlKeywordsToAvoid.test(url) ||
-          !isLikelyToolHomepage(url)
-        ) {
-          continue;
-        }
+        if (!isLikelyToolHomepage(url)) continue;
 
         tools.push({
           id: generateId(),
@@ -139,7 +89,6 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
         });
       }
     }
-
     return tools;
   } catch (error) {
     console.error("searchAITools error:", error);
