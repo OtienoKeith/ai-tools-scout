@@ -15,8 +15,276 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export async function searchAITools(query: string): Promise<TavilyTool[]> {
   try {
+    // Hardcoded demo queries and their results
+    const demoQueries: Record<string, TavilyTool[]> = {
+      "image generation": [
+        {
+          id: "midjourney",
+          name: "Midjourney",
+          description: "AI-powered image generation tool for creating stunning artwork from text descriptions.",
+          pricing: "Paid",
+          url: "https://midjourney.com",
+          pricingUrl: "https://docs.midjourney.com/docs/plans"
+        },
+        {
+          id: "dalle",
+          name: "DALL·E",
+          description: "OpenAI's AI system that creates realistic images and art from a description in natural language.",
+          pricing: "Paid",
+          url: "https://openai.com/dall-e-2/",
+          pricingUrl: "https://openai.com/pricing"
+        },
+        {
+          id: "leonardo-ai",
+          name: "Leonardo AI",
+          description: "AI art generator for creating production-quality visual assets with ease.",
+          pricing: "Freemium",
+          url: "https://leonardo.ai",
+          pricingUrl: "https://leonardo.ai/pricing"
+        }
+      ],
+      "text summarization": [
+        {
+          id: "chatgpt",
+          name: "ChatGPT",
+          description: "Advanced conversational AI for writing, coding, and summarizing text.",
+          pricing: "Freemium",
+          url: "https://chat.openai.com",
+          pricingUrl: "https://openai.com/pricing"
+        },
+        {
+          id: "claude",
+          name: "Claude",
+          description: "Anthropic's AI assistant for summarizing, writing, and answering questions.",
+          pricing: "Freemium",
+          url: "https://claude.ai",
+          pricingUrl: "https://claude.ai/pricing"
+        },
+        {
+          id: "smodin-summarizer",
+          name: "Smodin Summarizer",
+          description: "AI-powered tool for automatic text and document summarization.",
+          pricing: "Freemium",
+          url: "https://smodin.io/summarizer",
+          pricingUrl: "https://smodin.io/pricing"
+        }
+      ],
+      "speech-to-text transcription": [
+        {
+          id: "whisper",
+          name: "Whisper by OpenAI",
+          description: "Automatic speech recognition system for transcribing audio to text.",
+          pricing: "Free",
+          url: "https://openai.com/research/whisper",
+          pricingUrl: "https://openai.com/pricing"
+        },
+        {
+          id: "otter-ai",
+          name: "Otter.ai",
+          description: "AI-powered meeting transcription and note-taking tool.",
+          pricing: "Freemium",
+          url: "https://otter.ai",
+          pricingUrl: "https://otter.ai/pricing"
+        },
+        {
+          id: "fireflies-ai",
+          name: "Fireflies.ai",
+          description: "AI meeting assistant for recording, transcribing, and searching voice conversations.",
+          pricing: "Freemium",
+          url: "https://fireflies.ai",
+          pricingUrl: "https://fireflies.ai/pricing"
+        }
+      ],
+      "grammar correction": [
+        {
+          id: "grammarly",
+          name: "Grammarly",
+          description: "AI-powered writing assistant that helps improve grammar, style, and tone in real-time.",
+          pricing: "Freemium",
+          url: "https://grammarly.com",
+          pricingUrl: "https://www.grammarly.com/premium"
+        },
+        {
+          id: "prowritingaid",
+          name: "ProWritingAid",
+          description: "AI-powered grammar checker, style editor, and writing mentor in one package.",
+          pricing: "Freemium",
+          url: "https://prowritingaid.com",
+          pricingUrl: "https://prowritingaid.com/en/App/Purchase"
+        },
+        {
+          id: "ginger-ai",
+          name: "Ginger AI",
+          description: "AI grammar and spell checker for clear and effective writing.",
+          pricing: "Freemium",
+          url: "https://gingersoftware.com",
+          pricingUrl: "https://www.gingersoftware.com/grammarcheck/premium"
+        }
+      ],
+      "remove background from images": [
+        {
+          id: "remove-bg",
+          name: "Remove.bg",
+          description: "Remove image backgrounds automatically with AI.",
+          pricing: "Freemium",
+          url: "https://remove.bg",
+          pricingUrl: "https://www.remove.bg/pricing"
+        },
+        {
+          id: "photoroom",
+          name: "PhotoRoom",
+          description: "AI photo editor for removing backgrounds and creating product images.",
+          pricing: "Freemium",
+          url: "https://photoroom.com",
+          pricingUrl: "https://www.photoroom.com/pricing"
+        },
+        {
+          id: "cleanup-pictures",
+          name: "Cleanup.pictures",
+          description: "Remove unwanted objects, people, or text from images with AI.",
+          pricing: "Freemium",
+          url: "https://cleanup.pictures",
+          pricingUrl: "https://cleanup.pictures/pricing"
+        }
+      ],
+      "video generation from text": [
+        {
+          id: "pictory",
+          name: "Pictory",
+          description: "AI video generator that turns scripts or articles into engaging videos.",
+          pricing: "Paid",
+          url: "https://pictory.ai",
+          pricingUrl: "https://pictory.ai/pricing"
+        },
+        {
+          id: "synthesia",
+          name: "Synthesia",
+          description: "Create AI videos from text in minutes with avatars and voiceovers.",
+          pricing: "Paid",
+          url: "https://synthesia.io",
+          pricingUrl: "https://www.synthesia.io/pricing"
+        },
+        {
+          id: "lumen5",
+          name: "Lumen5",
+          description: "AI-powered video creation platform for turning text into video content.",
+          pricing: "Freemium",
+          url: "https://lumen5.com",
+          pricingUrl: "https://lumen5.com/pricing/"
+        }
+      ],
+      "ai coding assistants": [
+        {
+          id: "github-copilot",
+          name: "GitHub Copilot",
+          description: "AI pair programmer that helps you write code faster and with fewer errors.",
+          pricing: "Paid",
+          url: "https://github.com/features/copilot",
+          pricingUrl: "https://github.com/features/copilot#pricing"
+        },
+        {
+          id: "replit-ghostwriter",
+          name: "Replit Ghostwriter",
+          description: "AI-powered code completion and chat for Replit users.",
+          pricing: "Paid",
+          url: "https://replit.com/site/ghostwriter",
+          pricingUrl: "https://replit.com/site/ghostwriter"
+        },
+        {
+          id: "codeium",
+          name: "Codeium",
+          description: "AI code completion and search for developers, free for individuals.",
+          pricing: "Freemium",
+          url: "https://codeium.com",
+          pricingUrl: "https://codeium.com/pricing"
+        }
+      ],
+      "ai logo generators": [
+        {
+          id: "looka",
+          name: "Looka",
+          description: "AI-powered logo maker for creating professional logos in minutes.",
+          pricing: "Paid",
+          url: "https://looka.com",
+          pricingUrl: "https://looka.com/pricing"
+        },
+        {
+          id: "logoai",
+          name: "LogoAI",
+          description: "AI logo generator for unique and creative logo designs.",
+          pricing: "Paid",
+          url: "https://logoai.com",
+          pricingUrl: "https://logoai.com/pricing"
+        },
+        {
+          id: "brandmark-io",
+          name: "Brandmark.io",
+          description: "AI logo design tool for creating memorable brand identities.",
+          pricing: "Paid",
+          url: "https://brandmark.io",
+          pricingUrl: "https://brandmark.io/pricing"
+        }
+      ],
+      "document summarization": [
+        {
+          id: "chatpdf",
+          name: "ChatPDF",
+          description: "AI tool for chatting with and summarizing PDF documents.",
+          pricing: "Freemium",
+          url: "https://chatpdf.com",
+          pricingUrl: "https://www.chatpdf.com/pricing"
+        },
+        {
+          id: "humata",
+          name: "Humata",
+          description: "AI-powered document Q&A and summarization assistant.",
+          pricing: "Freemium",
+          url: "https://humata.ai",
+          pricingUrl: "https://humata.ai/pricing"
+        },
+        {
+          id: "scisummary",
+          name: "SciSummary",
+          description: "AI tool for summarizing scientific papers and research articles.",
+          pricing: "Freemium",
+          url: "https://scisummary.com",
+          pricingUrl: "https://scisummary.com/pricing"
+        }
+      ],
+      "customer support chatbots": [
+        {
+          id: "intercom-fin",
+          name: "Intercom Fin",
+          description: "AI-powered customer support chatbot for instant answers and automation.",
+          pricing: "Paid",
+          url: "https://www.intercom.com/fin",
+          pricingUrl: "https://www.intercom.com/pricing"
+        },
+        {
+          id: "tidio",
+          name: "Tidio",
+          description: "AI chatbot and live chat for customer support and sales automation.",
+          pricing: "Freemium",
+          url: "https://www.tidio.com",
+          pricingUrl: "https://www.tidio.com/pricing/"
+        },
+        {
+          id: "drift-ai",
+          name: "Drift AI",
+          description: "AI-powered chatbot for B2B customer engagement and support.",
+          pricing: "Paid",
+          url: "https://drift.com",
+          pricingUrl: "https://drift.com/pricing/"
+        }
+      ]
+    };
+    const normalizedQuery = query.trim().toLowerCase();
+    if (demoQueries[normalizedQuery]) {
+      return demoQueries[normalizedQuery];
+    }
+
     // Check cache first for faster responses
-    const cacheKey = query.toLowerCase().trim();
+    const cacheKey = normalizedQuery;
     const cached = searchCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return cached.tools;
