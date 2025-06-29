@@ -118,46 +118,33 @@ ai-tools-scout/
 - **Icons**: Lucide React
 - **APIs**: Tavily Search API, Mem0 Memory API
 
-## 🚀 Simple Deployment
+## 🚀 Vite Deployment Instructions
 
-### Deploy to Vercel (1-Click)
+### Deploy to Vercel
+1. **Framework Preset:** Vite
+2. **Root Directory:** `./` (the root of your repo)
+3. **Build Command:** `vite build` (or leave blank for auto-detect)
+4. **Output Directory:** `dist`
+5. **Environment Variables:**
+   - `VITE_TAVILY_API_KEY=your_tavily_api_key_here`
+   - `VITE_MEM0_API_KEY=your_mem0_api_key_here`
+6. **Deploy!**
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/OtienoKeith/ai-tools-scout)
+### Deploy to Netlify
+1. **Build Command:** `vite build`
+2. **Publish Directory:** `dist`
+3. **Environment Variables:** Same as above
 
-### Manual Deployment Steps
+### Local Development
+```bash
+npm install
+npm run dev
+```
+App will be at [http://localhost:5173](http://localhost:5173)
 
-1. **Fork this repository** to your GitHub account
-2. **Import to Vercel**:
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your forked repository
-   - Vercel will auto-detect it's a Next.js project
+---
 
-3. **Add Environment Variables** in Vercel:
-   - Go to Project Settings → Environment Variables
-   - Add these two variables:
-     ```
-     TAVILY_API_KEY=your_tavily_api_key_here
-     NEXT_PUBLIC_MEM0_API_KEY=your_mem0_api_key_here
-     ```
-
-4. **Deploy** - Vercel will automatically deploy!
-
-### Get API Keys
-
-- **Tavily API**: [https://tavily.com/](https://tavily.com/) (Required)
-- **Mem0 API**: [https://mem0.ai/](https://mem0.ai/) (Optional - for memory features)
-
-That's it! Your app will be live in minutes. 🎉
-
-## 🔍 How It Works
-
-1. **User Input**: User enters a search query
-2. **API Search**: Query is sent to Tavily API to search the web
-3. **Result Processing**: Search results are processed to extract tool information
-4. **Memory Storage**: Successful searches are stored in Mem0 (if configured)
-5. **Display**: Results are displayed in a clean, card-based layout
-6. **Recent Access**: Users can access previous searches from memory
+**If you see `vite: command not found` on Vercel, make sure your latest commit is pushed and Vite is in your devDependencies!**
 
 ## 🤝 Contributing
 
