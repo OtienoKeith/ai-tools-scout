@@ -61,18 +61,95 @@ function App() {
         {/* Header Section */}
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">Find the Best AI Tools for Any Task</h1>
-          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Just tell us what you want to do, and we'll scout the web for the best AI tools.
+          <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed mb-8">
+            Discover the perfect AI tools to boost your productivity. From content creation to data analysis, 
+            we'll help you find the right tools for your needs.
           </p>
+          
+          {/* Feature Highlights */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="text-3xl mb-3">🔍</div>
+              <h3 className="text-lg font-semibold mb-2">Smart Search</h3>
+              <p className="text-gray-400 text-sm">Find tools based on what you want to accomplish, not just keywords</p>
+            </div>
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="text-3xl mb-3">💰</div>
+              <h3 className="text-lg font-semibold mb-2">Pricing Info</h3>
+              <p className="text-gray-400 text-sm">See pricing models and get direct links to pricing pages</p>
+            </div>
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="text-3xl mb-3">⚡</div>
+              <h3 className="text-lg font-semibold mb-2">Fast Results</h3>
+              <p className="text-gray-400 text-sm">Get curated results quickly with intelligent caching</p>
+            </div>
+          </div>
         </div>
 
         {/* Search Section */}
         <div className="max-w-2xl mx-auto mb-16">
+          {/* Search Instructions */}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-semibold mb-4">What can we help you find?</h2>
+            <p className="text-gray-300 mb-6">
+              Describe what you want to accomplish, and we'll find the perfect AI tools for you.
+            </p>
+            
+            {/* Example Searches */}
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-medium mb-4 text-blue-300">💡 Try these examples:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  onClick={() => setUserInput("Create images from text descriptions")}
+                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+                >
+                  🎨 Create images from text descriptions
+                </button>
+                <button
+                  onClick={() => setUserInput("Write blog posts and articles")}
+                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+                >
+                  ✍️ Write blog posts and articles
+                </button>
+                <button
+                  onClick={() => setUserInput("Transcribe audio to text")}
+                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+                >
+                  🎤 Transcribe audio to text
+                </button>
+                <button
+                  onClick={() => setUserInput("Generate video content")}
+                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+                >
+                  🎬 Generate video content
+                </button>
+                <button
+                  onClick={() => setUserInput("Analyze data and create charts")}
+                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+                >
+                  📊 Analyze data and create charts
+                </button>
+                <button
+                  onClick={() => setUserInput("Design logos and graphics")}
+                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+                >
+                  🎨 Design logos and graphics
+                </button>
+              </div>
+            </div>
+
+            {/* Search Tips */}
+            <div className="text-sm text-gray-400 space-y-1">
+              <p>💡 <strong>Tip:</strong> Be specific about what you want to accomplish</p>
+              <p>💡 <strong>Examples:</strong> "Create social media posts", "Analyze customer feedback", "Generate code"</p>
+            </div>
+          </div>
+
           {/* Search Input and Button */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <input
               type="text"
-              placeholder="What do you need help with?"
+              placeholder="e.g., Create professional presentations, Generate marketing copy, Build a chatbot..."
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyPress={handleKeyPress}
