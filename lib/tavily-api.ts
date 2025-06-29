@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-
 interface TavilyTool {
+  id: string
   name: string
   description: string
   pricing: string
@@ -8,39 +7,26 @@ interface TavilyTool {
   pricingUrl?: string
 }
 
-interface TavilyResponse {
-  results: Array<{
-    title: string
-    url: string
-    content: string
-  }>
-}
-
 // Cache for recent searches to improve performance
 const searchCache = new Map<string, { tools: TavilyTool[], timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
-export async function POST(request: NextRequest) {
+export async function searchAITools(query: string): Promise<TavilyTool[]> {
   try {
-    const { query } = await request.json()
-    
-    if (!query) {
-      return NextResponse.json({ error: 'Query is required' }, { status: 400 })
-    }
-
     // Check cache first for faster responses
     const cacheKey = query.toLowerCase().trim()
     const cached = searchCache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return NextResponse.json({ tools: cached.tools })
+      return cached.tools
     }
 
-    const apiKey = process.env.TAVILY_API_KEY
+    const apiKey = process.env.VITE_TAVILY_API_KEY
     
     if (!apiKey) {
       // Return enhanced mock data for development
       const mockTools: TavilyTool[] = [
         {
+          id: "1",
           name: "ChatGPT",
           description: "Advanced conversational AI for writing, coding, and problem-solving tasks with natural language processing.",
           pricing: "Freemium",
@@ -48,6 +34,7 @@ export async function POST(request: NextRequest) {
           pricingUrl: "https://openai.com/pricing"
         },
         {
+          id: "2",
           name: "Midjourney",
           description: "AI-powered image generation tool for creating stunning artwork and visuals from text descriptions.",
           pricing: "Paid",
@@ -55,6 +42,7 @@ export async function POST(request: NextRequest) {
           pricingUrl: "https://docs.midjourney.com/docs/plans"
         },
         {
+          id: "3",
           name: "Notion AI",
           description: "AI writing assistant integrated directly into your workspace for notes, documents, and collaboration.",
           pricing: "Paid",
@@ -62,6 +50,7 @@ export async function POST(request: NextRequest) {
           pricingUrl: "https://www.notion.so/pricing"
         },
         {
+          id: "4",
           name: "Jasper",
           description: "AI content creation platform for marketing copy, blog posts, and creative writing with templates.",
           pricing: "Paid",
@@ -69,6 +58,7 @@ export async function POST(request: NextRequest) {
           pricingUrl: "https://jasper.ai/pricing"
         },
         {
+          id: "5",
           name: "Copy.ai",
           description: "AI copywriting tool that generates marketing content, social media posts, and business copy.",
           pricing: "Freemium",
@@ -76,9 +66,10 @@ export async function POST(request: NextRequest) {
           pricingUrl: "https://copy.ai/pricing"
         }
       ]
+      
       // Cache the mock results
       searchCache.set(cacheKey, { tools: mockTools, timestamp: Date.now() })
-      return NextResponse.json({ tools: mockTools })
+      return mockTools
     }
 
     // Enhanced search query for better results
@@ -111,27 +102,34 @@ export async function POST(request: NextRequest) {
     if (data.answer) {
       const lines = data.answer.split('\n').filter(line => line.trim() !== '');
       let currentTool: Partial<TavilyTool> = {};
-      const desiredTools = 6; // Target number of tools
 
       for (const line of lines) {
-        if (tools.length >= desiredTools) break;
+        if (tools.length >= 5) break; // Aim for 5 tools to ensure we have 3 good ones
+
         const trimmedLine = line.trim();
+        
         // Skip non-tool content
         if (/\b(blog|article|news|review|guide|tutorial|how to|what is|why use)\b/i.test(trimmedLine)) {
           continue;
         }
+
         // Enhanced pattern matching
         const nameMatch = trimmedLine.match(/^(?:1\.|-\s*)?(?:Name|Tool):\s*(.+)/i) || 
                          trimmedLine.match(/^([^-:]+?)\s*-\s*(?:AI Tool|Software)/i) ||
                          trimmedLine.match(/^([A-Z][a-zA-Z0-9\s]+?)(?:\s*[-|]\s*|$)/);
+
         const descMatch = trimmedLine.match(/^(?:2\.|-\s*)?(?:Description|Function):\s*(.+)/i);
         const pricingMatch = trimmedLine.match(/^(?:3\.|-\s*)?(?:Pricing|Cost):\s*(.+)/i);
         const urlMatch = trimmedLine.match(/^(?:4\.|-\s*)?(?:URL|Link|Homepage):\s*(https?:\/\/[^\s]+)/i);
         const pricingUrlMatch = trimmedLine.match(/^(?:5\.|-\s*)?(?:Pricing URL|Pricing Link):\s*(https?:\/\/[^\s]+)/i);
+
         if (nameMatch && nameMatch[1]) {
           // Save previous tool if complete
           if (currentTool.name && currentTool.url && !tools.some(t => t.url === currentTool.url)) {
-            tools.push(currentTool as TavilyTool);
+            tools.push({
+              id: tools.length.toString(),
+              ...currentTool
+            } as TavilyTool);
           }
           currentTool = { 
             name: nameMatch[1].trim(), 
@@ -148,14 +146,18 @@ export async function POST(request: NextRequest) {
           currentTool.pricingUrl = pricingUrlMatch[1].trim();
         }
       }
-      // Add the last processed tool if it's complete and hasn't been added
-      if (tools.length < desiredTools && currentTool.name && currentTool.url && !tools.some(t => t.url === currentTool.url)) {
-        tools.push(currentTool as TavilyTool);
+
+      // Add the last tool if complete
+      if (currentTool.name && currentTool.url && !tools.some(t => t.url === currentTool.url)) {
+        tools.push({
+          id: tools.length.toString(),
+          ...currentTool
+        } as TavilyTool);
       }
     }
 
-    // Fallback to data.results if answer parsing yields too few tools (less than desiredTools) or is not present
-    if (tools.length < 6 && data.results && Array.isArray(data.results)) {
+    // Enhanced fallback parsing from results
+    if (tools.length < 3 && data.results && Array.isArray(data.results)) {
       for (const result of data.results) {
         if (tools.length >= 5) break;
 
@@ -192,6 +194,7 @@ export async function POST(request: NextRequest) {
         }
 
         tools.push({
+          id: tools.length.toString(),
           name: toolName,
           description: content.substring(0, 150) + (content.length > 150 ? "..." : ""),
           pricing,
@@ -205,6 +208,7 @@ export async function POST(request: NextRequest) {
     if (tools.length < 3) {
       const fallbackTools: TavilyTool[] = [
         {
+          id: "fallback1",
           name: "ChatGPT",
           description: "Advanced conversational AI for writing, coding, and problem-solving tasks.",
           pricing: "Freemium",
@@ -212,6 +216,7 @@ export async function POST(request: NextRequest) {
           pricingUrl: "https://openai.com/pricing"
         },
         {
+          id: "fallback2",
           name: "Claude",
           description: "AI assistant by Anthropic for writing, analysis, and creative tasks.",
           pricing: "Freemium",
@@ -219,6 +224,7 @@ export async function POST(request: NextRequest) {
           pricingUrl: "https://claude.ai/pricing"
         },
         {
+          id: "fallback3",
           name: "Jasper",
           description: "AI content creation platform for marketing copy and creative writing.",
           pricing: "Paid",
@@ -242,9 +248,9 @@ export async function POST(request: NextRequest) {
     // Cache the results
     searchCache.set(cacheKey, { tools: uniqueTools, timestamp: Date.now() })
 
-    return NextResponse.json({ tools: uniqueTools })
+    return uniqueTools
   } catch (error) {
     console.error("Search API error:", error)
-    return NextResponse.json({ error: 'Failed to search for tools' }, { status: 500 })
+    throw new Error('Failed to search for tools')
   }
 } 

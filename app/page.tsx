@@ -1,9 +1,9 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState, useEffect } from "react"
-import { Search, Loader2, ExternalLink, Clock } from "lucide-react"
+import { Search, Loader2, ExternalLink, Clock, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ interface AITool {
   description: string
   pricing: string
   url: string
+  pricingUrl?: string
 }
 
 export default function AIToolsScout() {
@@ -241,14 +242,36 @@ export default function AIToolsScout() {
                       {tool.description}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <Button
-                      className="w-full h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-colors group"
-                      onClick={() => window.open(tool.url, "_blank")}
-                    >
-                      Visit Site
-                      <ExternalLink className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Button>
+                  <CardContent className="pt-0 space-y-3">
+                    {/* Pricing Information */}
+                    <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                      <div className="flex items-center">
+                        <DollarSign className="w-4 h-4 mr-2 text-green-400" />
+                        <span className="text-sm font-medium text-gray-300">Pricing</span>
+                      </div>
+                      <span className="text-sm font-semibold text-white">{tool.pricing}</span>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1 h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-colors group"
+                        onClick={() => window.open(tool.url, "_blank")}
+                      >
+                        Visit Site
+                        <ExternalLink className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                      
+                      {tool.pricingUrl && (
+                        <Button
+                          variant="outline"
+                          className="h-12 px-4 text-lg font-semibold border-gray-600 hover:bg-gray-700 transition-colors group"
+                          onClick={() => window.open(tool.pricingUrl, "_blank")}
+                        >
+                          <DollarSign className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
