@@ -46,9 +46,27 @@ export async function POST(request: NextRequest) {
           pricing: "Paid",
           url: "https://notion.so",
         },
+        {
+          name: "RunwayML",
+          description: "AI video editing and generation tools.",
+          pricing: "Freemium",
+          url: "https://runwayml.com/",
+        },
+        {
+          name: "ElevenLabs",
+          description: "AI voice synthesis and text-to-speech.",
+          pricing: "Paid",
+          url: "https://elevenlabs.io/",
+        },
+        {
+          name: "Synthesia",
+          description: "AI video creation platform with AI avatars.",
+          pricing: "Paid",
+          url: "https://www.synthesia.io/",
+        }
       ]
       
-      return NextResponse.json({ tools: mockTools })
+      return NextResponse.json({ tools: mockTools.slice(0, 6) }) // Return up to 6 mock tools
     }
 
     const response = await fetch("https://api.tavily.com/search", {
@@ -58,11 +76,11 @@ export async function POST(request: NextRequest) {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        query: `List 3 actual AI software tools or applications for "${query}". For each tool, provide ONLY: 1. Name of the tool. 2. A brief (1-2 sentence) description of its primary function. 3. Pricing model (e.g., Freemium, Paid, Subscription). 4. A direct URL to the tool's homepage. CRITICALLY IMPORTANT: Do NOT include blogs, articles, news, listicles, or any URLs that are not the direct homepage of an AI tool. Focus on specific, usable software. Return results in a clean, parseable format.`,
+        query: `List actual AI software tools or applications for "${query}". For each tool, provide ONLY: 1. Name of the tool. 2. A brief (1-2 sentence) description of its primary function. 3. Pricing model (e.g., Freemium, Paid, Subscription). 4. A direct URL to the tool's homepage. Aim for at least 6 distinct tools. CRITICALLY IMPORTANT: Do NOT include blogs, articles, news, listicles, or any URLs that are not the direct homepage of an AI tool. Focus on specific, usable software. Return results in a clean, parseable format.`,
         search_depth: "advanced", // Using advanced for better answer synthesis
         include_answer: true, // Request Tavily's synthesized answer
         include_raw_content: false, // We don't need raw search results snippets if answer is good
-        max_results: 5, // Ask for slightly more to have a buffer for filtering
+        max_results: 10, // Ask for more (e.g., 10) to increase chances of getting at least 6 good ones after filtering
         topic: "ai tools" // Specify the topic
       })
     })
@@ -89,9 +107,10 @@ export async function POST(request: NextRequest) {
       const lines = data.answer.split('\n').filter(line => line.trim() !== ''); // Filter out empty lines
 
       let currentTool: Partial<TavilyTool> = {};
+      const desiredTools = 6; // Target number of tools
 
       for (const line of lines) {
-        if (tools.length >= 3) break;
+        if (tools.length >= desiredTools) break;
 
         // Skip lines that look like blog titles or common non-tool phrases
         if (blogLikeKeywords.test(line) || nonToolTitleKeywords.test(line)) {
@@ -109,7 +128,7 @@ export async function POST(request: NextRequest) {
             if (currentTool.name && currentTool.url) { // If we have a complete previous tool, push it
                  if (!blogLikeKeywords.test(currentTool.name) && currentTool.url && !urlKeywordsToAvoid.test(currentTool.url)) {
                     tools.push(currentTool as TavilyTool);
-                    if (tools.length >= 3) break;
+                    if (tools.length >= desiredTools) break;
                  }
             }
             currentTool = { name: nameMatch[1].trim(), description: "N/A", pricing: "Unknown" };
@@ -135,7 +154,7 @@ export async function POST(request: NextRequest) {
         }
       }
       // Add the last processed tool if it's complete and hasn't been added
-      if (tools.length < 3 && currentTool.name && currentTool.url && !tools.some(t => t.url === currentTool.url)) {
+      if (tools.length < desiredTools && currentTool.name && currentTool.url && !tools.some(t => t.url === currentTool.url)) {
          if (!blogLikeKeywords.test(currentTool.name) && !urlKeywordsToAvoid.test(currentTool.url)) {
             tools.push(currentTool as TavilyTool);
             console.log("Added last processed tool from answer:", currentTool);
@@ -143,11 +162,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback to data.results if answer parsing yields too few tools (less than 3) or is not present
-    if (tools.length < 3 && data.results && Array.isArray(data.results)) {
+    // Fallback to data.results if answer parsing yields too few tools (less than desiredTools) or is not present
+    if (tools.length < desiredTools && data.results && Array.isArray(data.results)) {
       console.log("Falling back to data.results for additional tools.");
       for (const result of data.results) {
-        if (tools.length >= 3) break;
+        if (tools.length >= desiredTools) break;
 
         const title = result.title || "";
         const url = result.url || "";
@@ -195,7 +214,7 @@ export async function POST(request: NextRequest) {
     // Deduplicate tools based on URL, preferring those parsed from `data.answer` if structure is similar
     const uniqueTools = Array.from(new Map(tools.map(tool => [tool.url, tool])).values());
 
-    return NextResponse.json({ tools: uniqueTools.slice(0, 3) }) // Ensure we only return max 3 unique tools
+    return NextResponse.json({ tools: uniqueTools.slice(0, desiredTools) }) // Ensure we only return max desiredTools unique tools
   } catch (error) {
     console.error("Search API error:", error)
     return NextResponse.json({ error: 'Failed to search for tools' }, { status: 500 })
