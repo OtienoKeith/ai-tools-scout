@@ -124,12 +124,11 @@ function App() {
               <p className="text-gray-400 mb-4">Popular searches:</p>
               <div className="flex flex-wrap justify-center gap-3">
                 {[
-                  "Create images from text",
-                  "Write blog posts", 
-                  "Transcribe audio",
-                  "Generate videos",
-                  "Analyze data",
-                  "Design graphics"
+                  "Text summarization",
+                  "Image generation",
+                  "Speech-to-text transcription",
+                  "Data visualization",
+                  "Grammar correction"
                 ].map((example) => (
                   <button
                     key={example}
