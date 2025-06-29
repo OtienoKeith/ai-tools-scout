@@ -1,3 +1,5 @@
+import '../vite-env';
+
 interface SearchMemory {
   query: string
   results: Array<{
