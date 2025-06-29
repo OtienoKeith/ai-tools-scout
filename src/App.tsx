@@ -199,18 +199,23 @@ function App() {
 
         {/* No Results Section */}
         {displayResults.length === 0 && !loading && userInput && (
-          <div className="text-center py-16">
-            <div className="text-8xl mb-6">🔍</div>
-            <h3 className="text-2xl font-semibold mb-4">No tools found. Try another search.</h3>
-            <p className="text-lg text-gray-400 mb-8 max-w-md mx-auto">
-              We couldn't find any AI tools matching your search. Try different keywords or check your spelling.
+          <div className="text-center py-20">
+            <div className="text-6xl mb-6">😕</div>
+            <h3 className="text-3xl font-bold mb-4">Oops! We couldn't find any AI tools for "{userInput}".</h3>
+            <p className="text-lg text-gray-300 mb-6 max-w-xl mx-auto">
+              🔍 You can try a different keyword like:<br/>
+              <span className="inline-block mt-2">
+                ✏️ <span className="font-semibold">writing</span> &nbsp;|&nbsp; 🎨 <span className="font-semibold">design</span> &nbsp;|&nbsp; 📊 <span className="font-semibold">data analysis</span> &nbsp;|&nbsp; 🤖 <span className="font-semibold">automation</span>
+              </span>
+              <br/><br/>
+              Or do a manual search — sometimes the best tools are just one click away! 🧭
             </p>
             <button
               onClick={() => {
                 setUserInput("")
                 setResults([])
               }}
-              className="h-12 px-8 text-lg border-gray-600 hover:bg-gray-800 rounded-lg"
+              className="h-12 px-8 text-lg border border-gray-600 hover:bg-gray-800 rounded-lg mt-4"
             >
               Start New Search
             </button>
