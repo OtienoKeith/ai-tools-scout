@@ -17,12 +17,13 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSearch = async () => {
-    if (!userInput.trim()) return
+  const handleSearch = async (query?: string) => {
+    const searchQuery = query || userInput
+    if (!searchQuery.trim()) return
     setLoading(true)
     setError(null)
     try {
-      const tools = await searchAITools(userInput)
+      const tools = await searchAITools(searchQuery)
       setResults(tools)
     } catch (err) {
       console.error('Search error:', err)
@@ -31,6 +32,11 @@ function App() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleExampleClick = (example: string) => {
+    setUserInput(example)
+    handleSearch(example)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -87,90 +93,61 @@ function App() {
         </div>
 
         {/* Search Section */}
-        <div className="max-w-2xl mx-auto mb-16">
-          {/* Search Instructions */}
+        <div className="max-w-3xl mx-auto mb-16">
+          {/* Main Search */}
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold mb-4">What can we help you find?</h2>
-            <p className="text-gray-300 mb-6">
-              Describe what you want to accomplish, and we'll find the perfect AI tools for you.
-            </p>
+            <h2 className="text-3xl font-bold mb-6">What do you want to accomplish?</h2>
             
-            {/* Example Searches */}
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-medium mb-4 text-blue-300">💡 Try these examples:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <button
-                  onClick={() => setUserInput("Create images from text descriptions")}
-                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
-                >
-                  🎨 Create images from text descriptions
-                </button>
-                <button
-                  onClick={() => setUserInput("Write blog posts and articles")}
-                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
-                >
-                  ✍️ Write blog posts and articles
-                </button>
-                <button
-                  onClick={() => setUserInput("Transcribe audio to text")}
-                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
-                >
-                  🎤 Transcribe audio to text
-                </button>
-                <button
-                  onClick={() => setUserInput("Generate video content")}
-                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
-                >
-                  🎬 Generate video content
-                </button>
-                <button
-                  onClick={() => setUserInput("Analyze data and create charts")}
-                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
-                >
-                  📊 Analyze data and create charts
-                </button>
-                <button
-                  onClick={() => setUserInput("Design logos and graphics")}
-                  className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
-                >
-                  🎨 Design logos and graphics
-                </button>
+            {/* Search Input and Button */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <input
+                type="text"
+                placeholder="e.g., Create images, Write content, Analyze data..."
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="flex-1 h-16 text-xl px-8 bg-gray-800 border-gray-600 border-2 focus:border-blue-400 rounded-xl shadow-lg"
+                disabled={loading}
+              />
+              <button
+                onClick={() => handleSearch()}
+                disabled={loading || !userInput.trim()}
+                className="h-16 px-10 text-xl font-semibold bg-blue-600 hover:bg-blue-700 transition-colors rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                <Search className="w-6 h-6 mr-3 inline" />
+                Search
+              </button>
+            </div>
+
+            {/* Quick Examples */}
+            <div className="mb-6">
+              <p className="text-gray-400 mb-4">Popular searches:</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {[
+                  "Create images from text",
+                  "Write blog posts", 
+                  "Transcribe audio",
+                  "Generate videos",
+                  "Analyze data",
+                  "Design graphics"
+                ].map((example) => (
+                  <button
+                    key={example}
+                    onClick={() => handleExampleClick(example)}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-full text-sm transition-colors"
+                  >
+                    {example}
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* Search Tips */}
-            <div className="text-sm text-gray-400 space-y-1">
-              <p>💡 <strong>Tip:</strong> Be specific about what you want to accomplish</p>
-              <p>💡 <strong>Examples:</strong> "Create social media posts", "Analyze customer feedback", "Generate code"</p>
-            </div>
-          </div>
-
-          {/* Search Input and Button */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <input
-              type="text"
-              placeholder="e.g., Create professional presentations, Generate marketing copy, Build a chatbot..."
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="flex-1 h-14 text-lg px-6 bg-gray-800 border-gray-600 border-2 focus:border-blue-400 rounded-lg"
-              disabled={loading}
-            />
-            <button
-              onClick={handleSearch}
-              disabled={loading || !userInput.trim()}
-              className="h-14 px-8 text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-colors rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Search className="w-5 h-5 mr-2 inline" />
-              Search
-            </button>
           </div>
 
           {/* Loading Indicator */}
           {loading && (
-            <div className="text-center py-6">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-600" />
-              <p className="text-gray-400 text-lg">Scouting the web for the best AI tools...</p>
+            <div className="text-center py-8">
+              <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-gray-400 text-lg">Finding the best AI tools for you...</p>
             </div>
           )}
 
