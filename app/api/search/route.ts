@@ -26,47 +26,9 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.TAVILY_API_KEY
     
     if (!apiKey) {
-      // Return mock data for development
-      const mockTools: TavilyTool[] = [
-        {
-          name: "ChatGPT",
-          description: "Advanced conversational AI for writing, coding, and problem-solving tasks.",
-          pricing: "Freemium",
-          url: "https://chat.openai.com",
-        },
-        {
-          name: "Midjourney",
-          description: "AI-powered image generation tool for creating stunning artwork and visuals.",
-          pricing: "Paid",
-          url: "https://midjourney.com",
-        },
-        {
-          name: "Notion AI",
-          description: "AI writing assistant integrated directly into your workspace and notes.",
-          pricing: "Paid",
-          url: "https://notion.so",
-        },
-        {
-          name: "RunwayML",
-          description: "AI video editing and generation tools.",
-          pricing: "Freemium",
-          url: "https://runwayml.com/",
-        },
-        {
-          name: "ElevenLabs",
-          description: "AI voice synthesis and text-to-speech.",
-          pricing: "Paid",
-          url: "https://elevenlabs.io/",
-        },
-        {
-          name: "Synthesia",
-          description: "AI video creation platform with AI avatars.",
-          pricing: "Paid",
-          url: "https://www.synthesia.io/",
-        }
-      ]
-      
-      return NextResponse.json({ tools: mockTools.slice(0, 6) }) // Return up to 6 mock tools
+      // If API key is NOT found, return an error.
+      console.error("TAVILY_API_KEY is not set.")
+      return NextResponse.json({ error: 'API key is missing. Cannot perform search.' }, { status: 500 })
     }
 
     const response = await fetch("https://api.tavily.com/search", {
