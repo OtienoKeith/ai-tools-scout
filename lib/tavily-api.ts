@@ -172,9 +172,18 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
           continue;
         }
 
-        // Extract tool name from title
-        const toolName = title.split(/[\-|\|]/)[0].trim();
-        if (!toolName || toolName.length < 2) continue;
+        // Extract tool name from title, fallback to domain if title is generic
+        let toolName = title.split(/[\-|\|]/)[0].trim();
+        // If toolName is too generic or empty, use domain
+        if (!toolName || toolName.length < 2 || /voice cloning|ai tool|minutes|home|page|website|app|clone/i.test(toolName)) {
+          try {
+            const urlObj = new URL(url);
+            toolName = urlObj.hostname.replace(/^www\./, '').split('.')[0];
+            toolName = toolName.charAt(0).toUpperCase() + toolName.slice(1);
+          } catch (e) {
+            toolName = "Unknown";
+          }
+        }
 
         // Determine pricing from content
         let pricing = "Unknown";
