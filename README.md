@@ -118,34 +118,37 @@ ai-tools-scout/
 - **Icons**: Lucide React
 - **APIs**: Tavily Search API, Mem0 Memory API
 
-## 🚀 Deployment
+## 🚀 Simple Deployment
 
-### Vercel (Recommended)
+### Deploy to Vercel (1-Click)
 
-1. **Push to GitHub**
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   ```
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/OtienoKeith/ai-tools-scout)
 
-2. **Deploy to Vercel**
-   - Connect your GitHub repository to Vercel
-   - Add environment variables in Vercel dashboard:
-     - `TAVILY_API_KEY`
-     - `NEXT_PUBLIC_MEM0_API_KEY`
+### Manual Deployment Steps
 
-3. **Deploy**
-   - Vercel will automatically deploy on push
-   - Your app will be available at your Vercel URL
+1. **Fork this repository** to your GitHub account
+2. **Import to Vercel**:
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your forked repository
+   - Vercel will auto-detect it's a Next.js project
 
-### Other Platforms
+3. **Add Environment Variables** in Vercel:
+   - Go to Project Settings → Environment Variables
+   - Add these two variables:
+     ```
+     TAVILY_API_KEY=your_tavily_api_key_here
+     NEXT_PUBLIC_MEM0_API_KEY=your_mem0_api_key_here
+     ```
 
-The app can be deployed to any platform that supports Next.js:
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
+4. **Deploy** - Vercel will automatically deploy!
+
+### Get API Keys
+
+- **Tavily API**: [https://tavily.com/](https://tavily.com/) (Required)
+- **Mem0 API**: [https://mem0.ai/](https://mem0.ai/) (Optional - for memory features)
+
+That's it! Your app will be live in minutes. 🎉
 
 ## 🔍 How It Works
 
