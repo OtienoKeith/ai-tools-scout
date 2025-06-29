@@ -156,25 +156,65 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       }
     }
 
-    // Enhanced fallback parsing from results
-    if (tools.length < 3 && data.results && Array.isArray(data.results)) {
+    // Enhanced fallback parsing from results (relaxed filtering, blog parsing)
+    if (tools.length < 6 && data.results && Array.isArray(data.results)) {
       for (const result of data.results) {
-        if (tools.length >= 5) break;
+        if (tools.length >= 10) break; // Try to get up to 10 for deduplication
 
         const title = result.title || "";
         const url = result.url || "";
         const content = result.content || "";
 
-        // Skip if already added or looks like non-tool content
-        if (tools.some(t => t.url === url) || 
-            /\b(blog|article|news|review|guide|tutorial)\b/i.test(title) ||
-            /\/(blog|article|news|docs|guides)\//i.test(url)) {
+        // If it's a blog/listicle, try to extract tool names/URLs from the content
+        if (/\b(blog|list|top|best|tools|apps|ai)\b/i.test(title) && /\b(list|top|best|tools|apps|ai)\b/i.test(content)) {
+          // Try to extract lines that look like tool listings
+          const lines = content.split(/\n|\r|\d+\.|\*|\-/).map(l => l.trim()).filter(l => l.length > 2);
+          for (const line of lines) {
+            // Try to extract [Tool Name](URL) or Tool Name - URL
+            let name = "";
+            let toolUrl = "";
+            let desc = "";
+            const mdMatch = line.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/);
+            if (mdMatch) {
+              name = mdMatch[1];
+              toolUrl = mdMatch[2];
+              desc = line.replace(mdMatch[0], '').trim();
+            } else {
+              // Try: Tool Name - https://...
+              const dashMatch = line.match(/^([A-Za-z0-9\s\-\_\.]+)\s*[-:–]\s*(https?:\/\/[^\s]+)(.*)$/);
+              if (dashMatch) {
+                name = dashMatch[1].trim();
+                toolUrl = dashMatch[2].trim();
+                desc = dashMatch[3]?.trim() || '';
+              }
+            }
+            // Fallback: just a URL
+            if (!name && line.match(/https?:\/\//)) {
+              try {
+                const urlObj = new URL(line.match(/https?:\/\/[^\s]+/)![0]);
+                name = urlObj.hostname.replace(/^www\./, '').split('.')[0];
+                name = name.charAt(0).toUpperCase() + name.slice(1);
+                toolUrl = urlObj.href;
+              } catch {}
+            }
+            if (name && toolUrl && !tools.some(t => t.url === toolUrl)) {
+              tools.push({
+                id: tools.length.toString(),
+                name,
+                description: desc || title,
+                pricing: "Unknown",
+                url: toolUrl,
+                pricingUrl: toolUrl + (toolUrl.endsWith('/') ? 'pricing' : '/pricing')
+              });
+              if (tools.length >= 6) break;
+            }
+          }
+          if (tools.length >= 6) break;
           continue;
         }
 
-        // Extract tool name from title, fallback to domain if title is generic
+        // Otherwise, treat as a direct tool result
         let toolName = title.split(/[\-|\|]/)[0].trim();
-        // If toolName is too generic or empty, use domain
         if (!toolName || toolName.length < 2 || /voice cloning|ai tool|minutes|home|page|website|app|clone/i.test(toolName)) {
           try {
             const urlObj = new URL(url);
@@ -185,31 +225,30 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
           }
         }
 
-        // Determine pricing from content
         let pricing = "Unknown";
         const lowerContent = content.toLowerCase();
         if (/\b(free|freemium)\b/.test(lowerContent)) pricing = "Freemium";
         else if (/\b(paid|premium|enterprise|subscription|\$)\b/.test(lowerContent)) pricing = "Paid";
 
-        // Generate pricing URL if not found
         let pricingUrl = undefined;
         if (url && !url.includes('/pricing') && !url.includes('/plans')) {
           try {
             const urlObj = new URL(url);
             pricingUrl = `${urlObj.origin}/pricing`;
-          } catch (e) {
-            // Invalid URL, skip
-          }
+          } catch (e) {}
         }
 
-        tools.push({
-          id: tools.length.toString(),
-          name: toolName,
-          description: content.substring(0, 150) + (content.length > 150 ? "..." : ""),
-          pricing,
-          url,
-          pricingUrl
-        });
+        if (!tools.some(t => t.url === url)) {
+          tools.push({
+            id: tools.length.toString(),
+            name: toolName,
+            description: title,
+            pricing,
+            url,
+            pricingUrl
+          });
+        }
+        if (tools.length >= 6) break;
       }
     }
 
@@ -251,8 +290,8 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       }
     }
 
-    // Deduplicate and limit to 5 results
-    const uniqueTools = Array.from(new Map(tools.map(tool => [tool.url, tool])).values()).slice(0, 5);
+    // Deduplicate and limit to 6 results
+    const uniqueTools = Array.from(new Map(tools.map(tool => [tool.url, tool])).values()).slice(0, 6);
 
     // Cache the results
     searchCache.set(cacheKey, { tools: uniqueTools, timestamp: Date.now() })
