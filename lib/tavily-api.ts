@@ -82,30 +82,39 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       return mockTools;
     }
 
-    // Initialize Tavily client
-    const client = tavily({ apiKey });
-
     // Enhanced search query for better AI tool discovery
     const enhancedQuery = `Find 6-8 specific AI software tools or applications for "${query}". For each tool, provide: 1. Exact tool name. 2. Brief description of its main function (1-2 sentences). 3. Pricing model (Free, Freemium, Paid, Subscription, Enterprise). 4. Direct homepage URL. 5. Pricing page URL if available. Focus ONLY on actual software tools, not articles, blogs, or reviews. Return in structured format.`;
 
-    // Use Tavily Search with optimized parameters
-    const response = await client.search({
-      query: enhancedQuery,
-      searchDepth: "advanced", // Better content extraction
-      maxResults: 10, // Get more results to ensure we have enough tools
-      includeAnswer: "advanced", // Get detailed answer for better parsing
-      includeRawContent: "markdown", // Get full content for better tool extraction
-      chunksPerSource: 3, // More content chunks per source
-      topic: "general", // General search for AI tools
-      includeDomains: [], // No domain restrictions
-      excludeDomains: ["medium.com", "dev.to", "hashnode.dev"] // Exclude blog platforms
+    // Use direct fetch to Tavily API instead of SDK
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        query: enhancedQuery,
+        search_depth: "advanced",
+        include_answer: true,
+        include_raw_content: "markdown",
+        max_results: 10,
+        chunks_per_source: 3,
+        topic: "general",
+        include_domains: [],
+        exclude_domains: ["medium.com", "dev.to", "hashnode.dev"]
+      })
     });
 
+    if (!response.ok) {
+      throw new Error(`Tavily API error: ${response.status}`);
+    }
+
+    const data = await response.json();
     const tools: TavilyTool[] = [];
 
     // Parse the answer for structured tool information
-    if (response.answer) {
-      const lines = response.answer.split('\n').filter(line => line.trim() !== '');
+    if (data.answer) {
+      const lines = data.answer.split('\n').filter(line => line.trim() !== '');
       let currentTool: Partial<TavilyTool> = {};
 
       for (const line of lines) {
@@ -157,8 +166,8 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
     }
 
     // Fallback: Parse from search results if answer parsing yields too few tools
-    if (tools.length < 3 && response.results && Array.isArray(response.results)) {
-      for (const result of response.results) {
+    if (tools.length < 3 && data.results && Array.isArray(data.results)) {
+      for (const result of data.results) {
         if (tools.length >= 6) break;
 
         const title = result.title || "";
