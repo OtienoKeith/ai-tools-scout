@@ -1,4 +1,4 @@
-import { tavily } from "@tavily/core";
+// ... existing code ...
 
 interface TavilyTool {
   id: string;
@@ -114,13 +114,11 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
 
     // Parse the answer for structured tool information
     if (data.answer) {
-      const lines = data.answer.split('\n').filter(line => line.trim() !== '');
+      const lines: string[] = data.answer.split('\n').filter((line: string) => line.trim() !== '');
       let currentTool: Partial<TavilyTool> = {};
 
-      for (const line of lines) {
-        if (tools.length >= 6) break; // Limit to 6 tools
-
-        const trimmedLine = line.trim();
+      for (const lineStr of lines as string[]) {
+        const trimmedLine = lineStr.trim();
         
         // Skip non-tool content
         if (/\b(blog|article|news|review|guide|tutorial|how to|what is|why use)\b/i.test(trimmedLine)) {
@@ -166,7 +164,7 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
     }
 
     // Fallback: Parse from search results if answer parsing yields too few tools
-    if (tools.length < 3 && data.results && Array.isArray(data.results)) {
+    if (tools.length < 6 && data.results && Array.isArray(data.results)) {
       for (const result of data.results) {
         if (tools.length >= 6) break;
 
@@ -174,9 +172,26 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
         const url = result.url || "";
         const content = result.content || "";
 
-        // Skip if it looks like a blog/article
-        if (/\b(blog|article|news|review|guide|tutorial|how to|what is|why use)\b/i.test(title) ||
-            /\b(blog|article|news|review|guide|tutorial|how to|what is|why use)\b/i.test(content)) {
+        // Stricter filter: skip if title or url looks like a listicle, review, or article
+        if (
+          /\b(blog|article|news|review|guide|tutorial|how to|what is|why use|list|lists|top \d+|best \d+|\d+ best|\d+ tools|\d+ ai|\d+ apps|\d+ software)\b/i.test(title) ||
+          /\b(blog|article|news|review|guide|tutorial|how to|what is|why use|list|lists|top \d+|best \d+|\d+ best|\d+ tools|\d+ ai|\d+ apps|\d+ software)\b/i.test(content) ||
+          /\b(blog|article|news|review|guide|tutorial|how to|what is|why use|list|lists|top\d+|best\d+|\d+best|\d+tools|\d+ai|\d+apps|\d+software)\b/i.test(url) ||
+          /\/(\d{4}|\d{2})\//.test(url) || // skip URLs with years (likely articles)
+          /\/(post|review|article|blog|news|guide|tutorial|how-to|list|lists)\//i.test(url)
+        ) {
+          continue;
+        }
+
+        // Only include URLs that look like homepages (not subpages with numbers or review in path)
+        if (/\/(post|review|article|blog|news|guide|tutorial|how-to|list|lists|\d{2,})\//i.test(url)) {
+          continue;
+        }
+        if (/\.(pdf|docx?|pptx?)$/i.test(url)) {
+          continue;
+        }
+        if (!/^https?:\/\/[\w.-]+\.[a-z]{2,}(\/)?$/i.test(url.split('?')[0].replace(/\/$/, ''))) {
+          // Only allow root or single-level URLs (likely homepages)
           continue;
         }
 
@@ -230,7 +245,6 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       }
     ];
 
-    // Add fallback tools that aren't already in results
     for (const fallbackTool of fallbackTools) {
       if (tools.length >= 6) break;
       if (!tools.some(t => t.name.toLowerCase() === fallbackTool.name.toLowerCase())) {
