@@ -52,8 +52,8 @@ function App() {
     }
   }
 
-  // Ensure at least 6 results (show fallback message if not)
-  const displayResults = results.length >= 6 ? results.slice(0, 6) : []
+  // Show all results (up to 6)
+  const displayResults = results.slice(0, 6)
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -115,7 +115,7 @@ function App() {
         {/* Results Section */}
         {displayResults.length > 0 && !loading && (
           <div className="mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Top Tools We Found</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Top Tools We Found ({displayResults.length})</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {displayResults.map((tool) => (
                 <div

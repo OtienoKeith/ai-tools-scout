@@ -20,7 +20,7 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       return cached.tools
     }
 
-    const apiKey = process.env.VITE_TAVILY_API_KEY
+    const apiKey = import.meta.env.VITE_TAVILY_API_KEY
     
     if (!apiKey) {
       // Return enhanced mock data for development
@@ -64,6 +64,14 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
           pricing: "Freemium",
           url: "https://copy.ai",
           pricingUrl: "https://copy.ai/pricing"
+        },
+        {
+          id: "6",
+          name: "Claude",
+          description: "AI assistant by Anthropic for writing, analysis, and creative tasks with advanced reasoning.",
+          pricing: "Freemium",
+          url: "https://claude.ai",
+          pricingUrl: "https://claude.ai/pricing"
         }
       ]
       
@@ -72,8 +80,8 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       return mockTools
     }
 
-    // Enhanced search query for better results
-    const enhancedQuery = `Find 5-7 specific AI software tools or applications for "${query}". For each tool, provide: 1. Exact tool name. 2. Brief description of its main function (1-2 sentences). 3. Pricing model (Free, Freemium, Paid, Subscription, Enterprise). 4. Direct homepage URL. 5. Pricing page URL if available. Focus ONLY on actual software tools, not articles, blogs, or reviews. Return in structured format.`
+    // Simple, direct search query
+    const searchQuery = `AI tools for ${query} - find specific software applications and tools`
 
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
@@ -82,11 +90,11 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        query: enhancedQuery,
-        search_depth: "advanced",
-        include_answer: true,
+        query: searchQuery,
+        search_depth: "basic",
+        include_answer: false,
         include_raw_content: false,
-        max_results: 8, // Increased for better coverage
+        max_results: 10,
         topic: "ai tools software applications"
       })
     })
@@ -98,138 +106,42 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
     const data = await response.json()
     const tools: TavilyTool[] = [];
 
-    // Enhanced parsing with better structure detection
-    if (data.answer) {
-      const lines = data.answer.split('\n').filter(line => line.trim() !== '');
-      let currentTool: Partial<TavilyTool> = {};
-
-      for (const line of lines) {
-        if (tools.length >= 5) break; // Aim for 5 tools to ensure we have 3 good ones
-
-        const trimmedLine = line.trim();
-        
-        // Skip non-tool content
-        if (/\b(blog|article|news|review|guide|tutorial|how to|what is|why use)\b/i.test(trimmedLine)) {
-          continue;
-        }
-
-        // Enhanced pattern matching
-        const nameMatch = trimmedLine.match(/^(?:1\.|-\s*)?(?:Name|Tool):\s*(.+)/i) || 
-                         trimmedLine.match(/^([^-:]+?)\s*-\s*(?:AI Tool|Software)/i) ||
-                         trimmedLine.match(/^([A-Z][a-zA-Z0-9\s]+?)(?:\s*[-|]\s*|$)/);
-
-        const descMatch = trimmedLine.match(/^(?:2\.|-\s*)?(?:Description|Function):\s*(.+)/i);
-        const pricingMatch = trimmedLine.match(/^(?:3\.|-\s*)?(?:Pricing|Cost):\s*(.+)/i);
-        const urlMatch = trimmedLine.match(/^(?:4\.|-\s*)?(?:URL|Link|Homepage):\s*(https?:\/\/[^\s]+)/i);
-        const pricingUrlMatch = trimmedLine.match(/^(?:5\.|-\s*)?(?:Pricing URL|Pricing Link):\s*(https?:\/\/[^\s]+)/i);
-
-        if (nameMatch && nameMatch[1]) {
-          // Save previous tool if complete
-          if (currentTool.name && currentTool.url && !tools.some(t => t.url === currentTool.url)) {
-            tools.push({
-              id: tools.length.toString(),
-              ...currentTool
-            } as TavilyTool);
-          }
-          currentTool = { 
-            name: nameMatch[1].trim(), 
-            description: "AI tool for various tasks", 
-            pricing: "Unknown" 
-          };
-        } else if (descMatch && descMatch[1] && currentTool.name) {
-          currentTool.description = descMatch[1].trim();
-        } else if (pricingMatch && pricingMatch[1] && currentTool.name) {
-          currentTool.pricing = pricingMatch[1].trim();
-        } else if (urlMatch && urlMatch[1] && currentTool.name) {
-          currentTool.url = urlMatch[1].trim();
-        } else if (pricingUrlMatch && pricingUrlMatch[1] && currentTool.name) {
-          currentTool.pricingUrl = pricingUrlMatch[1].trim();
-        }
-      }
-
-      // Add the last tool if complete
-      if (currentTool.name && currentTool.url && !tools.some(t => t.url === currentTool.url)) {
-        tools.push({
-          id: tools.length.toString(),
-          ...currentTool
-        } as TavilyTool);
-      }
-    }
-
-    // Enhanced fallback parsing from results (relaxed filtering, blog parsing)
-    if (tools.length < 6 && data.results && Array.isArray(data.results)) {
+    // Simple parsing from search results
+    if (data.results && Array.isArray(data.results)) {
       for (const result of data.results) {
-        if (tools.length >= 10) break; // Try to get up to 10 for deduplication
+        if (tools.length >= 6) break;
 
         const title = result.title || "";
         const url = result.url || "";
         const content = result.content || "";
 
-        // If it's a blog/listicle, try to extract tool names/URLs from the content
-        if (/\b(blog|list|top|best|tools|apps|ai)\b/i.test(title) && /\b(list|top|best|tools|apps|ai)\b/i.test(content)) {
-          // Try to extract lines that look like tool listings
-          const lines = content.split(/\n|\r|\d+\.|\*|\-/).map(l => l.trim()).filter(l => l.length > 2);
-          for (const line of lines) {
-            // Try to extract [Tool Name](URL) or Tool Name - URL
-            let name = "";
-            let toolUrl = "";
-            let desc = "";
-            const mdMatch = line.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/);
-            if (mdMatch) {
-              name = mdMatch[1];
-              toolUrl = mdMatch[2];
-              desc = line.replace(mdMatch[0], '').trim();
-            } else {
-              // Try: Tool Name - https://...
-              const dashMatch = line.match(/^([A-Za-z0-9\s\-\_\.]+)\s*[-:–]\s*(https?:\/\/[^\s]+)(.*)$/);
-              if (dashMatch) {
-                name = dashMatch[1].trim();
-                toolUrl = dashMatch[2].trim();
-                desc = dashMatch[3]?.trim() || '';
-              }
-            }
-            // Fallback: just a URL
-            if (!name && line.match(/https?:\/\//)) {
-              try {
-                const urlObj = new URL(line.match(/https?:\/\/[^\s]+/)![0]);
-                name = urlObj.hostname.replace(/^www\./, '').split('.')[0];
-                name = name.charAt(0).toUpperCase() + name.slice(1);
-                toolUrl = urlObj.href;
-              } catch {}
-            }
-            if (name && toolUrl && !tools.some(t => t.url === toolUrl)) {
-              tools.push({
-                id: tools.length.toString(),
-                name,
-                description: desc || title,
-                pricing: "Unknown",
-                url: toolUrl,
-                pricingUrl: toolUrl + (toolUrl.endsWith('/') ? 'pricing' : '/pricing')
-              });
-              if (tools.length >= 6) break;
-            }
-          }
-          if (tools.length >= 6) break;
+        // Skip if it's clearly not a tool
+        if (!url || url.includes('blog') || url.includes('article') || url.includes('news')) {
           continue;
         }
 
-        // Otherwise, treat as a direct tool result
+        // Extract tool name from title or URL
         let toolName = title.split(/[\-|\|]/)[0].trim();
-        if (!toolName || toolName.length < 2 || /voice cloning|ai tool|minutes|home|page|website|app|clone/i.test(toolName)) {
+        if (!toolName || toolName.length < 2) {
           try {
             const urlObj = new URL(url);
             toolName = urlObj.hostname.replace(/^www\./, '').split('.')[0];
             toolName = toolName.charAt(0).toUpperCase() + toolName.slice(1);
           } catch (e) {
-            toolName = "Unknown";
+            toolName = "Unknown Tool";
           }
         }
 
+        // Determine pricing from content
         let pricing = "Unknown";
         const lowerContent = content.toLowerCase();
-        if (/\b(free|freemium)\b/.test(lowerContent)) pricing = "Freemium";
-        else if (/\b(paid|premium|enterprise|subscription|\$)\b/.test(lowerContent)) pricing = "Paid";
+        if (/\b(free|freemium)\b/.test(lowerContent)) {
+          pricing = "Freemium";
+        } else if (/\b(paid|premium|enterprise|subscription|\$)\b/.test(lowerContent)) {
+          pricing = "Paid";
+        }
 
+        // Generate pricing URL
         let pricingUrl = undefined;
         if (url && !url.includes('/pricing') && !url.includes('/plans')) {
           try {
@@ -238,21 +150,21 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
           } catch (e) {}
         }
 
+        // Avoid duplicates
         if (!tools.some(t => t.url === url)) {
           tools.push({
             id: tools.length.toString(),
             name: toolName,
-            description: title,
+            description: title || content.substring(0, 100) + "...",
             pricing,
             url,
             pricingUrl
           });
         }
-        if (tools.length >= 6) break;
       }
     }
 
-    // Ensure we have at least 3 results by adding fallback tools if needed
+    // Add fallback tools if we don't have enough
     if (tools.length < 3) {
       const fallbackTools: TavilyTool[] = [
         {
@@ -290,13 +202,10 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
       }
     }
 
-    // Deduplicate and limit to 6 results
-    const uniqueTools = Array.from(new Map(tools.map(tool => [tool.url, tool])).values()).slice(0, 6);
-
     // Cache the results
-    searchCache.set(cacheKey, { tools: uniqueTools, timestamp: Date.now() })
+    searchCache.set(cacheKey, { tools, timestamp: Date.now() })
 
-    return uniqueTools
+    return tools
   } catch (error) {
     console.error("Search API error:", error)
     throw new Error('Failed to search for tools')
