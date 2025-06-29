@@ -1,22 +1,55 @@
-export interface TavilyTool {
-  id: string;
-  name: string;
-  description: string;
-  pricing: string;
-  url: string;
-}
+import type { TavilyTool } from "../types";
 
-interface TavilyResponse {
-  results: Array<{
-    title: string;
-    url: string;
-    content: string;
-  }>;
+// Domains that often contain blogs, news, or lists, not direct product pages
+const disallowedDomains = [
+  "medium.com", "wordpress.com", "blogspot.com", "news.ycombinator.com",
+  "producthunt.com", "reddit.com", "quora.com", "youtube.com"
+];
+
+// Helper to detect if a URL looks like a blog, article, news, review, or list
+const urlLooksLikeBlogOrList = (url: string) =>
+  /\/(blog|article|news|reviews?|posts?|lists?|guide|explained)\/|(\d{2,})|top-\d/i.test(url);
+
+// Helper to determine if a URL is likely a tool homepage
+const isLikelyToolHomepage = (url: string) => {
+  try {
+    const u = new URL(url);
+    // Only allow URLs at domain root or one level deep (site.com or site.com/tool)
+    const pathParts = u.pathname.split('/').filter(Boolean);
+    if (pathParts.length > 1) return false;
+    // Exclude known blog/news domains
+    if (disallowedDomains.some(domain => u.hostname.includes(domain))) return false;
+    // Exclude URLs that look like blog/list
+    if (urlLooksLikeBlogOrList(url)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Fallback mock data for development or if API key is not set
+function getMockTools(query: string): TavilyTool[] {
+  return [
+    {
+      id: "mock-1",
+      name: "MockTool",
+      description: `A mock AI tool for ${query}.`,
+      pricing: "Free",
+      url: "https://mocktool.com"
+    },
+    {
+      id: "mock-2",
+      name: "ExampleAI",
+      description: `An example AI tool for ${query}.`,
+      pricing: "Paid",
+      url: "https://exampleai.com"
+    }
+  ];
 }
 
 export async function searchAITools(query: string): Promise<TavilyTool[]> {
   const apiKey = import.meta.env.VITE_TAVILY_API_KEY;
-  
+
   if (!apiKey) {
     // Fallback to mock data for development
     console.warn("Tavily API key not found, using mock data");
@@ -31,11 +64,15 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        query: `List 3 actual AI tools for ${query}. For each, give: - Name - Short description (1–2 lines) - Pricing - Link to the tool (not to blogs or articles) Return in plain format, no blog links, no summaries.`,
-        search_depth: "advanced", // Using advanced for better answer synthesis
+        query: `List 3 actual, individual AI tools (not blogs, articles, reviews, or listicles) for ${query}. For each, provide:
+- Name
+- Short description (1–2 lines)
+- Pricing
+- Direct link to the tool's homepage (not to blogs, articles, or lists; only product homepages).`,
+        search_depth: "advanced",
         include_answer: true,
-        include_raw_content: false, // Keep false if only answer is needed
-        max_results: 3 // Requesting 3 tools
+        include_raw_content: false,
+        max_results: 3
       })
     });
 
@@ -44,45 +81,38 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
     }
 
     const data = await response.json();
-    
-    const tools: TavilyTool[] = [];
+
     const blogLikeKeywords = /\b(blog|article|top|best|guide|review|vs|alternatives|\d+\s+(tools|ways|apps))\b/i;
     const urlKeywordsToAvoid = /\/(blog|article|news)\b|medium\.com|wordpress\.com|blogspot\.com/i;
-    const generateId = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9);
+    const generateId = () =>
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substr(2, 9);
 
+    const tools: TavilyTool[] = [];
+
+    // (Optional) Try to parse answer text if it's structured
     if (data.answer) {
       const lines = data.answer.split('\n');
       for (const line of lines) {
         if (blogLikeKeywords.test(line) || urlKeywordsToAvoid.test(line)) {
           continue;
         }
-        const toolRegex = /-\s*(.+?):\s*(.+?)\s*-\s*Pricing:\s*(.+?)\s*-\s*Link:\s*(https?:\/\/[^\s]+)/i;
-        const match = line.match(toolRegex);
-
-        if (match && match[1] && match[2] && match[3] && match[4]) {
-          const name = match[1].trim();
-          const description = match[2].trim();
-          const pricing = match[3].trim();
-          const url = match[4].trim();
-
-          if (!blogLikeKeywords.test(name) && !urlKeywordsToAvoid.test(url)) {
-            tools.push({ id: generateId(), name, description, pricing, url });
-          }
-        } else {
-          const simpleToolRegex = /^\s*-\s*([^:(]+?)\s*(?:\(([^)]+)\))?\s*-\s*(https?:\/\/[^\s]+)/i;
-          const simpleMatch = line.match(simpleToolRegex);
-          if (simpleMatch && simpleMatch[1] && simpleMatch[3]) {
-            const name = simpleMatch[1].trim();
-            const pricing = simpleMatch[2]?.trim() || "Unknown";
-            const url = simpleMatch[3].trim();
-            if (!blogLikeKeywords.test(name) && !urlKeywordsToAvoid.test(url)) {
-               tools.push({ id: generateId(), name, description: "N/A", pricing, url });
-            }
-          }
+        // Example: ToolName - Description - Pricing - URL
+        const match = line.match(/^(.+?)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*(https?:\/\/\S+)/);
+        if (match && isLikelyToolHomepage(match[4])) {
+          tools.push({
+            id: generateId(),
+            name: match[1].trim(),
+            description: match[2].trim(),
+            pricing: match[3].trim(),
+            url: match[4].trim()
+          });
         }
       }
     }
 
+    // Fallback: parse the raw results array
     if (tools.length < 3 && data.results) {
       for (const result of data.results) {
         if (tools.length >= 3) break;
@@ -91,65 +121,28 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
         const url = result.url || "";
         const contentSnippet = result.content || "";
 
-        if (blogLikeKeywords.test(title) || urlKeywordsToAvoid.test(url) || blogLikeKeywords.test(contentSnippet.substring(0,100))) {
+        // Stricter filtering
+        if (
+          blogLikeKeywords.test(title) ||
+          urlKeywordsToAvoid.test(url) ||
+          !isLikelyToolHomepage(url)
+        ) {
           continue;
         }
-        if (url.includes("example.com")) continue;
 
-        const toolName = title.split(' - ')[0]?.split(' | ')[0]?.trim() || title.trim();
-        let pricing = "Unknown";
-        const lowerContent = contentSnippet.toLowerCase();
-        if (lowerContent.includes("free") || lowerContent.includes("freemium")) pricing = "Freemium";
-        else if (lowerContent.includes("paid") || lowerContent.includes("subscription") || lowerContent.includes("$")) pricing = "Paid";
-
-        if (!tools.some(t => t.url === url)) {
-          tools.push({
-            id: generateId(),
-            name: toolName,
-            description: contentSnippet.substring(0, 150) + "...",
-            pricing,
-            url
-          });
-        }
+        tools.push({
+          id: generateId(),
+          name: title.trim(),
+          description: contentSnippet.trim().slice(0, 200),
+          pricing: "Unknown",
+          url
+        });
       }
     }
-    return tools.slice(0, 3); // Ensure we only return max 3
+
+    return tools;
   } catch (error) {
-    console.error("Tavily API error:", error);
-    // Fallback to mock data on error
-    return getMockTools(query);
+    console.error("searchAITools error:", error);
+    return [];
   }
 }
-
-// Mock data fallback
-function getMockTools(query: string): TavilyTool[] {
-  const mockTools: TavilyTool[] = [
-    {
-      id: "1",
-      name: "ChatGPT",
-      description: "Advanced conversational AI for writing, coding, and problem-solving tasks.",
-      pricing: "Freemium",
-      url: "https://chat.openai.com",
-    },
-    {
-      id: "2",
-      name: "Midjourney",
-      description: "AI-powered image generation tool for creating stunning artwork and visuals.",
-      pricing: "Paid",
-      url: "https://midjourney.com",
-    },
-    {
-      id: "3",
-      name: "Notion AI",
-      description: "AI writing assistant integrated directly into your workspace and notes.",
-      pricing: "Paid",
-      url: "https://notion.so",
-    },
-  ];
-  
-  // Filter based on query for more realistic behavior
-  return mockTools.filter(tool => 
-    tool.name.toLowerCase().includes(query.toLowerCase()) ||
-    tool.description.toLowerCase().includes(query.toLowerCase())
-  );
-} 
