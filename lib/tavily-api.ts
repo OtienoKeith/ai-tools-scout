@@ -351,7 +351,13 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
     }
 
     // Enhanced search query for better AI tool discovery
-    const enhancedQuery = `Find 6-8 specific AI software tools or applications for "${query}". For each tool, provide: 1. Exact tool name. 2. Brief description of its main function (1-2 sentences). 3. Pricing model (Free, Freemium, Paid, Subscription, Enterprise). 4. Direct homepage URL. 5. Pricing page URL if available. Focus ONLY on actual software tools, not articles, blogs, or reviews. Return in structured format.`;
+    const enhancedQuery = `List exactly 6 specific, currently available AI software tools (not articles, not blogs, not listicles) for the following need: "${query}". For each tool, provide:
+1. Exact tool name (no extra text).
+2. One-sentence description of its main function.
+3. Pricing model (Free, Freemium, Paid, Subscription, Enterprise).
+4. Direct homepage URL (not a blog, not a review, not a listicle).
+5. Pricing page URL if available.
+Return ONLY actual software tools, not articles, not reviews, not listicles, not blog posts. Format as a clear, structured list.`;
 
     // Use direct fetch to Tavily API instead of SDK
     const response = await fetch("https://api.tavily.com/search", {
@@ -446,20 +452,18 @@ export async function searchAITools(query: string): Promise<TavilyTool[]> {
           /\b(blog|article|news|review|guide|tutorial|how to|what is|why use|list|lists|top \d+|best \d+|\d+ best|\d+ tools|\d+ ai|\d+ apps|\d+ software)\b/i.test(content) ||
           /\b(blog|article|news|review|guide|tutorial|how to|what is|why use|list|lists|top\d+|best\d+|\d+best|\d+tools|\d+ai|\d+apps|\d+software)\b/i.test(url) ||
           /\/(\d{4}|\d{2})\//.test(url) || // skip URLs with years (likely articles)
-          /\/(post|review|article|blog|news|guide|tutorial|how-to|list|lists)\//i.test(url)
+          /\/(post|review|article|blog|news|guide|tutorial|how-to|list|lists)\//i.test(url) ||
+          /\b(list|lists|top|best|review|article|blog|news|guide|tutorial)\b/i.test(title)
         ) {
           continue;
         }
 
-        // Only include URLs that look like homepages (not subpages with numbers or review in path)
-        if (/\/(post|review|article|blog|news|guide|tutorial|how-to|list|lists|\d{2,})\//i.test(url)) {
+        // Only include if title and url look like a real tool
+        if (!title || !url || !/^https?:\/\/[\w.-]+\.[a-z]{2,}(\/)?$/i.test(url.split('?')[0].replace(/\/$/, ''))) {
           continue;
         }
-        if (/\.(pdf|docx?|pptx?)$/i.test(url)) {
-          continue;
-        }
-        if (!/^https?:\/\/[\w.-]+\.[a-z]{2,}(\/)?$/i.test(url.split('?')[0].replace(/\/$/, ''))) {
-          // Only allow root or single-level URLs (likely homepages)
+        // Must have a description
+        if (!content || content.length < 10) {
           continue;
         }
 
