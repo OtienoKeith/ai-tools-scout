@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Search, Loader2, ExternalLink, Clock, DollarSign } from "lucide-react"
+import { Search, Loader2, ExternalLink, DollarSign } from "lucide-react"
 import { searchAITools } from "../lib/tavily-api"
 
 interface AITool {
@@ -51,6 +51,9 @@ function App() {
         return "bg-gray-700 text-gray-300"
     }
   }
+
+  // Ensure at least 3 results (show fallback message if not)
+  const displayResults = results.length >= 3 ? results.slice(0, 5) : []
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -110,53 +113,30 @@ function App() {
         </div>
 
         {/* Results Section */}
-        {results.length > 0 && !loading && (
+        {displayResults.length > 0 && !loading && (
           <div className="mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Top Tools We Found</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {results.map((tool) => (
+              {displayResults.map((tool) => (
                 <div
                   key={tool.id}
-                  className="bg-gray-800 border-gray-700 border-2 hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-lg p-6"
+                  className="bg-gray-800 border-gray-700 border-2 hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-lg p-6 relative"
                 >
-                  <div className="pb-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-2xl font-bold">{tool.name}</h3>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded ${getPricingColor(tool.pricing)}`}>
-                        {tool.pricing}
-                      </span>
-                    </div>
-                    <p className="text-base leading-relaxed text-gray-300">
-                      {tool.description}
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    {/* Pricing Information */}
-                    <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                      <div className="flex items-center">
-                        <DollarSign className="w-4 h-4 mr-2 text-green-400" />
-                        <span className="text-sm font-medium text-gray-300">Pricing</span>
-                      </div>
-                      <span className="text-sm font-semibold text-white">{tool.pricing}</span>
-                    </div>
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        className="flex-1 h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-colors rounded-lg group"
-                        onClick={() => window.open(tool.url, "_blank")}
-                      >
-                        Visit Site
-                        <ExternalLink className="w-5 h-5 ml-2 inline group-hover:translate-x-1 transition-transform" />
-                      </button>
-                      {tool.pricingUrl && (
-                        <button
-                          className="h-12 px-4 text-lg font-semibold border-gray-600 hover:bg-gray-700 transition-colors rounded-lg border group"
-                          onClick={() => window.open(tool.pricingUrl, "_blank")}
-                        >
-                          <DollarSign className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        </button>
-                      )}
-                    </div>
+                  {/* Pricing Badge Top Right */}
+                  <span className={`absolute top-4 right-4 px-3 py-1 text-xs font-semibold rounded ${getPricingColor(tool.pricing)}`}>{tool.pricing}</span>
+                  {/* Tool Name */}
+                  <h3 className="text-2xl font-bold mb-2">{tool.name}</h3>
+                  {/* Description */}
+                  <p className="text-base leading-relaxed text-gray-300 mb-6">{tool.description}</p>
+                  {/* Main Action Button: Go to Pricing if available, else homepage */}
+                  <div className="flex gap-2">
+                    <button
+                      className="flex-1 h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-colors rounded-lg group"
+                      onClick={() => window.open(tool.pricingUrl || tool.url, "_blank")}
+                    >
+                      {tool.pricingUrl ? "View Pricing" : "Visit Site"}
+                      <ExternalLink className="w-5 h-5 ml-2 inline group-hover:translate-x-1 transition-transform" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -165,7 +145,7 @@ function App() {
         )}
 
         {/* No Results Section */}
-        {results.length === 0 && !loading && userInput && (
+        {displayResults.length === 0 && !loading && userInput && (
           <div className="text-center py-16">
             <div className="text-8xl mb-6">🔍</div>
             <h3 className="text-2xl font-semibold mb-4">No tools found. Try another search.</h3>
