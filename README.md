@@ -1,25 +1,24 @@
 # AI Tools Scout 🔍
 
-A modern web application that helps you discover the best AI tools for any task. Simply describe what you need help with, and AI Tools Scout will search a curated database to find the most relevant AI tools, complete with descriptions, pricing information, and direct links to pricing pages.
+AI Tools Scout is a modern web application that helps you discover the best AI tools for any task—powered by the incredible **Tavily API**. Just describe what you need, and Tavily's advanced search delivers the most relevant AI tools, complete with descriptions, pricing, and direct links.
 
-## ✨ Features
+## ✨ Features (Powered by Tavily)
 
-- **🔍 Smart Search**: Search for AI tools using natural language queries
-- **🎯 Tool Discovery**: Find tools with detailed information including pricing and descriptions
-- **💰 Pricing Information**: Direct links to pricing pages for each tool
-- **⚡ Fast Results**: Get results quickly with optimized search algorithms and caching
+- **🌟 Tavily-Powered Search**: All tool discovery is driven by the Tavily API for the most accurate, up-to-date results
+- **🔍 Natural Language Search**: Find AI tools using plain English queries—Tavily understands your intent
+- **🎯 Tool Discovery**: Get detailed info, pricing, and direct links for every tool
+- **💰 Pricing Information**: See pricing models and go straight to pricing pages
+- **⚡ Fast Results**: Lightning-fast search, thanks to Tavily's optimized API and local caching
 - **🎨 Modern UI**: Beautiful, responsive interface built with Vite and Tailwind CSS
-- **🛡️ Error Handling**: Robust error handling with user-friendly, emoji-rich messages
-- **📱 Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
-- **🧠 Curated Results**: Hardcoded demo queries and a comprehensive AI tool database for accuracy
-- **❌ No Inaccurate Fallbacks**: If no relevant tools are found, a friendly message is shown—never misleading results
+- **🛡️ Friendly Error Handling**: Emoji-rich, user-friendly messages if no tools are found
+- **📱 Responsive Design**: Works perfectly on desktop, tablet, and mobile
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js 18+ 
+- Node.js 18+
 - npm or pnpm
+- **Tavily API key** (required)
 
 ### Installation
 
@@ -28,57 +27,49 @@ A modern web application that helps you discover the best AI tools for any task.
    git clone <your-repo-url>
    cd ai-tools-scout
    ```
-
 2. **Install dependencies**
    ```bash
    npm install
    # or
    pnpm install
    ```
-
-3. **Set up environment variables**
-   
+3. **Set up your Tavily API key**
    Create a `.env.local` file in the root directory:
    ```bash
-   # Tavily API Key for AI tools search (optional, for future expansion)
    VITE_TAVILY_API_KEY=your_tavily_api_key_here
    ```
-
 4. **Start the development server**
    ```bash
    npm run dev
    # or
    pnpm dev
    ```
-
 5. **Open your browser**
-   
-   Navigate to [http://localhost:5173](http://localhost:5173)
+   Go to [http://localhost:5173](http://localhost:5173)
 
 ## 📖 Usage
 
-### Basic Search
-1. Enter your query in the search box (e.g., "AI writing assistant", "image generation tools")
-2. Click the "Search" button or press Enter
-3. View the results with tool information, pricing, and links
+### Search with Tavily
+1. Enter your query (e.g., "AI writing assistant", "image generation tools")
+2. Click "Search" or press Enter
+3. Instantly see Tavily-powered results: tool info, pricing, and links
 
 ### Tool Information
-Each tool result includes:
+Each result includes:
 - **Name**: Tool name and brand
-- **Description**: Brief overview of functionality
-- **Pricing**: Free, Freemium, or Paid with direct pricing page link
-- **Visit Site**: Direct link to the tool's website
+- **Description**: Brief overview
+- **Pricing**: Free, Freemium, or Paid (with direct pricing page link)
+- **Visit Site**: Direct link to the tool's homepage
 - **Pricing Button**: Direct link to the tool's pricing page (when available)
 
-## 🧠 How Results Work
+## 🧠 How Tavily Results Work
 
-- **Popular Demo Queries**: 10+ popular queries (like "image generation", "project management", "email") always return a handpicked, accurate list of real AI tools.
-- **Curated Database**: For all other queries, a large, categorized AI tool database is used for smart matching.
-- **No Inaccurate Fallbacks**: If no relevant tools are found, you get a friendly, emoji-rich message (not a card) encouraging you to try another search or explore popular categories.
+- **Popular Demo Queries**: 10+ popular queries (like "image generation", "project management", "email") always return a handpicked, accurate list of real AI tools—thanks to Tavily's advanced search and our prompt engineering.
+- **Tavily-Powered Discovery**: For all other queries, Tavily's API finds the best matches from across the web, filtered and structured for clarity.
+- **No Inaccurate Fallbacks**: If Tavily can't find relevant tools, you get a friendly, emoji-rich message (not a card) encouraging you to try another search or explore popular categories.
 - **No More Misleading Results**: The app never shows unrelated or generic fallback tools for obscure searches—credibility is maintained.
 
 ### Example No Results Experience
-
 If you search for something unrelated (like "carrot chopper"), you'll see:
 
 😕 Oops! We couldn't find any AI tools for "carrot chopper".
@@ -98,7 +89,7 @@ ai-tools-scout/
 │   ├── index.css            # Global styles
 │   └── vite-env.d.ts        # Vite type definitions
 ├── lib/
-│   ├── tavily-api.ts        # Curated AI tool database and search logic
+│   ├── tavily-api.ts        # Tavily API integration and search logic
 │   └── utils.ts             # Utility functions
 ├── components/
 │   └── ui/                  # Reusable UI components
@@ -110,6 +101,7 @@ ai-tools-scout/
 
 ## 🛠️ Tech Stack
 
+- **Search Engine**: 🌟 **Tavily API** (core of all tool discovery)
 - **Framework**: Vite + React
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
@@ -124,7 +116,7 @@ ai-tools-scout/
 3. **Build Command:** `vite build` (or leave blank for auto-detect)
 4. **Output Directory:** `dist`
 5. **Environment Variables:**
-   - `VITE_TAVILY_API_KEY=your_tavily_api_key_here` (optional)
+   - `VITE_TAVILY_API_KEY=your_tavily_api_key_here`
 6. **Deploy!**
 
 ### Deploy to Netlify
@@ -139,9 +131,8 @@ npm run dev
 ```
 App will be at [http://localhost:5173](http://localhost:5173)
 
-## 🔍 Search Features
+## 🔍 Search Features (All Powered by Tavily)
 
-### Enhanced Search Algorithm
 - **Handpicked Demo Results**: Always returns accurate, real AI tools for popular queries
 - **Smart Filtering**: Filters out blog posts, articles, and non-tool content
 - **Pricing Detection**: Automatically detects and categorizes pricing models
@@ -168,6 +159,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
+- [Tavily](https://tavily.com/) for powering all search and discovery
 - [shadcn/ui](https://ui.shadcn.com/) for the beautiful UI components
 - [Vite](https://vitejs.dev/) for the fast build tool
 - [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
@@ -182,4 +174,4 @@ If you encounter any issues or have questions:
 
 ---
 
-**Made with ❤️ for the AI community** 
+**Made with ❤️ and powered by Tavily for the AI community** 
