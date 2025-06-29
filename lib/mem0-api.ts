@@ -49,6 +49,7 @@ export async function storeMemory(query: string, results: any[]): Promise<void> 
 
 export async function getRecentMemories(): Promise<string[]> {
   const apiKey = process.env.NEXT_PUBLIC_MEM0_API_KEY
+  console.log("Mem0 API Key in getRecentMemories:", apiKey ? "Found" : "Not Found");
   
   if (!apiKey) {
     console.warn("Mem0 API key not found, using empty recent searches")
@@ -87,8 +88,10 @@ export async function getRecentMemories(): Promise<string[]> {
 
 export async function getMemoryByQuery(query: string): Promise<any[] | null> {
   const apiKey = process.env.NEXT_PUBLIC_MEM0_API_KEY
+  console.log("Mem0 API Key in getMemoryByQuery:", apiKey ? "Found" : "Not Found");
   
   if (!apiKey) {
+    console.warn("Mem0 API key for getMemoryByQuery not found. Cannot fetch from memory.");
     return null
   }
 
