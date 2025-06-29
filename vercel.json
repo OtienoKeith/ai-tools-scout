@@ -1,8 +1,8 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "next build",
-  "outputDirectory": ".next",
+  "framework": "vite",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
   "installCommand": "npm install",
-  "devCommand": "next dev",
+  "devCommand": "vite",
   "regions": ["iad1"]
-} 
+}
