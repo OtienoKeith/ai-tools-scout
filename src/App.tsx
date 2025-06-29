@@ -166,7 +166,7 @@ function App() {
         </div>
 
         {/* Results Section */}
-        {displayResults.length > 0 && !loading && (
+        {displayResults.length > 0 && !loading && !["no-results", "error"].includes(displayResults[0]?.id) && (
           <div className="mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Top Tools We Found ({displayResults.length})</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -198,7 +198,7 @@ function App() {
         )}
 
         {/* No Results Section */}
-        {displayResults.length === 0 && !loading && userInput && (
+        {((displayResults.length === 0 && !loading && userInput) || (displayResults.length === 1 && ["no-results", "error"].includes(displayResults[0]?.id))) && (
           <div className="text-center py-20">
             <div className="text-6xl mb-6">😕</div>
             <h3 className="text-3xl font-bold mb-4">Oops! We couldn't find any AI tools for "{userInput}".</h3>
